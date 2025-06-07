@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "cstdlib": "c",
+        "ux_gpio.h": "c",
+        "embux_global_define.h": "c",
+        "iodefine_elf2.h": "c",
+        "ratio": "cpp",
+        "system_error": "cpp",
+        "array": "cpp",
+        "functional": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "neoembux.h": "c"
+    }
+}
