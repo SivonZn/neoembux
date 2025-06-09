@@ -11,10 +11,11 @@ pkg_check_modules(GPIOD REQUIRED libgpiod)
 
 # 添加动态库目标 (关键修改)
 add_library(neoembux SHARED 
-    src/ux_gpio.cpp
+    src/lib/ux_gpio.cpp
+    src/lib/ux_softirq.cpp
 )
 
-add_executable(embux src/embux.cpp)
+add_executable(embux src/app/embux.cpp)
 
 # 链接库和头文件
 target_link_libraries(embux PRIVATE

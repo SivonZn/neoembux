@@ -1,5 +1,6 @@
-#include "../include/neoembux.h"
-#include "../include/neoembux/ux_gpio.h"
+#include "../../include/neoembux.h"
+#include "../../include/neoembux/ux_gpio.h"
+#include "../../include/neoembux/ux_softirq.h"
 
 static char neoembux_exe_name[PATH_MAX] = "NeoEmbUX";
 
@@ -43,7 +44,10 @@ static int setPin_impl(int pin, int mode, ...) {
     int acc_pin = pin - 1;
     int result = EMBUX_EXIT_SUCCESS;
     if(!io[acc_pin].isInited) {
-        if(initPin(acc_pin) != EMBUX_EXIT_SUCCESS) {
+        if(io[acc_pin].irq_isSet) {
+            result = EMBUX_EXIT_FAILURE;
+        }
+        else if(initPin(acc_pin) != EMBUX_EXIT_SUCCESS) {
             result = EMBUX_EXIT_FAILURE;
         }
     }
@@ -65,12 +69,16 @@ static int setPin_impl(int pin, int mode, ...) {
         if (gpiod_line_request_input(io[acc_pin].line, neoembux_exe_name) < 0) {
             perror("Set input failed");
             result = EMBUX_EXIT_FAILURE;
+        } else {
+            io[acc_pin].direction = NEOEMBUX_IN;
         }
     } else {
         int pinValue = va_arg(args, int);
         if (gpiod_line_request_output(io[acc_pin].line, neoembux_exe_name, pinValue) < 0) {
             perror("Set output failed");
             result = EMBUX_EXIT_FAILURE;
+        } else {
+            io[acc_pin].direction = NEOEMBUX_OUT;
         }
     }
     va_end(args); 
@@ -80,6 +88,35 @@ static int setPin_impl(int pin, int mode, ...) {
 static bool checkPin_impl(int pin) {
     int acc_pin = pin -1;
     return io_raw[acc_pin].isGPIO;
+}
+
+int setPinSoftIRQ_impl(int pin, void* fun) {
+    int acc_pin = pin - 1;
+    int result = EMBUX_EXIT_SUCCESS;
+    IRQThreadPayload* payload = static_cast<IRQThreadPayload*>(malloc(sizeof(IRQThreadPayload)));
+    if(!io[acc_pin].isInited) {
+        if(initPin(acc_pin) != EMBUX_EXIT_SUCCESS) {
+            free(payload);
+            return EMBUX_EXIT_FAILURE;
+        }
+    }
+    if (gpiod_line_request_both_edges_events(io[acc_pin].line, neoembux_exe_name) < 0) {
+        perror("Failed to request events");
+        free(payload);
+        return EMBUX_EXIT_FAILURE;
+    }
+    payload->func = (IRQExecFunc)fun;
+    payload->line = io[acc_pin].line;
+    if (pthread_create(&io[acc_pin].irq_thread, NULL, irq_monitor_thread, payload)) {
+        perror("Failed to create IRQ thread");
+        free(payload);
+        return EMBUX_EXIT_FAILURE;
+    }
+    if (pthread_detach(io[acc_pin].irq_thread)) {
+        perror("Failed to create IRQ thread");
+        return EMBUX_EXIT_FAILURE;
+    }
+    return EMBUX_EXIT_SUCCESS;
 }
 
 static void ioRelease_impl() {
@@ -127,7 +164,7 @@ static int initPin(int acc_pin) {
         return EMBUX_EXIT_FAILURE;
     }
 
-    io[acc_pin].line = gpiod_chip_get_line(io[acc_pin].chip, io_raw[0].line);
+    io[acc_pin].line = gpiod_chip_get_line(io[acc_pin].chip, io_raw[acc_pin].line);
     if (!io[acc_pin].line) {
         gpiod_chip_close(io[acc_pin].chip);
         fprintf(stderr, "[%s] GPIO line open failed: %s\n", 
