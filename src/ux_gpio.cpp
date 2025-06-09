@@ -153,7 +153,7 @@ static int initPinMap(){
 
 // C++命名空间版本实现
 #ifdef __cplusplus
-int neoEmbUx::setup() {
+int neoEmbUx::ioSetup() {
     return ioSetup_impl(); // 复用核心实现
 }
 int neoEmbUx::readPin(int pin) {
@@ -180,7 +180,7 @@ int neoEmbUx::setPin(int pin, int mode, ...) {
 bool neoEmbUx::checkPin(int pin) {
     return checkPin_impl(pin);
 }
-void neoEmbUx::release() {
+void neoEmbUx::ioRelease() {
     return ioRelease_impl();
 }
 
@@ -210,6 +210,9 @@ int neoEmbUx_setPin(int pin, int mode, ...) {
     }
     va_end(args); 
     return EMBUX_EXIT_SUCCESS;
+}
+bool neoEmbUx_checkPin(int pin) {
+    return checkPin_impl(pin);
 }
 void neoEmbUx_ioRelease(void) {
     ioRelease_impl();

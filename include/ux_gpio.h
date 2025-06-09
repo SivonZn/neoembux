@@ -25,17 +25,18 @@ struct io_raw {
 
 #ifdef __cplusplus
 namespace neoEmbUx {
-    int setup(); // C++命名空间版本
+    int ioSetup(); // C++命名空间版本
     int readPin(int pin);
     int setPin(int pin, int mode, ...);
     bool checkPin(int pin);
-    void release();
+    void ioRelease();
 }
 extern "C" { 
 #endif
 int neoEmbUx_ioSetup(void); // C语言版本
 int neoEmbUx_readPin(int pin);
 int neoEmbUx_setPin(int pin, int mode, ...);
+bool neoEmbUx_checkPin(int pin);
 void neoEmbUx_ioRelease(void);
 #ifdef __cplusplus
 }                           // 结束 extern "C" 块

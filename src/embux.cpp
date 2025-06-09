@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
         printf("Usage:\n");
         return EXIT_FAILURE;
     }
-    neoEmbUx::setup();
+    neoEmbUx::ioSetup();
     if(!strcmp(argv[1], "readall")) {
         printf("+----+---------------+------+-------+------+---------------+----+\n");
         printf("|Val.|               | GPIO |  Pin  | GPIO |               |Val.|\n");
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
                 acc_pin_r, neoEmbUx::checkPin(acc_pin_r)?"√":" ", neoEmbUx::checkPin(acc_pin_r)?neoEmbUx::readPin(acc_pin_r):-1);
         }
         printf("+----+---------------+-----+---+---+-------+---------------+----+\n");
-        neoEmbUx::release();
+        neoEmbUx::ioRelease();
         return EXIT_SUCCESS;
     } else {
         printf("Usage:\n readall\n");
