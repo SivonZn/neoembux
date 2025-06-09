@@ -1,5 +1,5 @@
 #include "../include/neoembux.h"
-#include "../include/ux_gpio.h"
+#include "../include/neoembux/ux_gpio.h"
 
 static char neoembux_exe_name[PATH_MAX] = "NeoEmbUX";
 

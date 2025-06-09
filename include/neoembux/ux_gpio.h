@@ -8,8 +8,8 @@
 #include <string.h>
 #include <linux/limits.h>
 #include <cerrno>
-#include "./iodefine.h"
-#include "./embux_global_define.h"
+#include "defines/iodefine.h"
+#include "defines/embux_global_define.h"
 
 struct io {
     gpiod_chip *chip;
