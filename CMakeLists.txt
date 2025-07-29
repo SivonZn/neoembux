@@ -56,5 +56,5 @@ install(TARGETS embux
 install(DIRECTORY include/ DESTINATION include)
 
 # 保留测试程序（可选）
-add_executable(neoembux_test test/test.cpp)
-target_link_libraries(neoembux_test PRIVATE neoembux)
+# add_executable(neoembux_test test/test.cpp)
+# target_link_libraries(neoembux_test PRIVATE neoembux)
