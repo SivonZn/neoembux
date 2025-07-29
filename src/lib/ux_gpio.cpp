@@ -33,7 +33,7 @@ static int readPin_impl(int pin) {
             return EMBUX_EXIT_FAILURE;
         }
     }
-    if(!embux_initialized) {
+    if(!initialized) {
         fprintf(stderr, "[%s] Using ioSetup First!\n", neoembux_exe_name);
         return EMBUX_EXIT_FAILURE;
     }
@@ -51,7 +51,7 @@ static int setPin_impl(int pin, int mode, ...) {
             result = EMBUX_EXIT_FAILURE;
         }
     }
-    if(!embux_initialized) {
+    if(!initialized) {
         fprintf(stderr, "[%s] Using ioSetup First!\n", neoembux_exe_name);
         result = EMBUX_EXIT_FAILURE;
     }
