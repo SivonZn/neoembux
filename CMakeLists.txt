@@ -46,17 +46,33 @@ target_include_directories(neoembux PUBLIC
 
 target_link_libraries(neoembux PRIVATE ${GPIOD_LIBRARIES})
 
-install(TARGETS neoembux
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    PUBLIC_HEADER DESTINATION include
-)
+# 安装部分兼容 buildroot external
+include(GNUInstallDirs)
 
-install(TARGETS embux
-    RUNTIME DESTINATION bin
-)
+if(NOT CMAKE_INSTALL_PREFIX)
+    message(FATAL_ERROR "ERROR: CMAKE_INSTALL_PREFIX is not defined.")
+endif()
 
-install(DIRECTORY include/ DESTINATION include)
+# Buildroot external 推荐用 CMAKE_INSTALL_FULL_LIBDIR 判断
+if(DEFINED CMAKE_INSTALL_FULL_LIBDIR)
+    install(TARGETS neoembux
+        LIBRARY DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}"
+    )
+    install(TARGETS embux
+        RUNTIME DESTINATION "${CMAKE_INSTALL_FULL_BINDIR}"
+    )
+else()
+    install(TARGETS neoembux
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+    install(TARGETS embux
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+    install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+endif()
 
 # 测试程序
 # add_executable(neoembux_test test/test.cpp)
