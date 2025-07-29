@@ -1,0 +1,5 @@
+#define EMBUX_GND 10000
+#define EMBUX_VCC_3V3 10001
+#define EMBUX_VCC_5V 10002
+//3.3V = 1, 5 = 2, EMBUX_GND = 0
+#define EMBUX_UNKNOWN 10003

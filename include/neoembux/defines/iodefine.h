@@ -1,10 +1,14 @@
 #ifndef EMBUX_IODEFINE
 #define EMBUX_IODEFINE
 
-#ifdef EMBUX_BOARD_ELF2
-#define EMBUX_ROCKCHIP
-#include "./iodefine_elf2.h"
+#ifdef EMBUX_BOARD_FORLINX_ELF_2
+#include "./board/forlinx_elf_2.h"
 #endif
+
+#ifdef EMBUX_BOARD_ORANGEPI_5_PLUS
+#include "./board/orangepi_5_plus.h"
+#endif
+
 
 static const unsigned int gpio[EMBUX_GPIO_NUM] = {
     #define IO(pin, value)  value,

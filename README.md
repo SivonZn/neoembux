@@ -7,8 +7,10 @@ apt update && apt upgrade
 apt install -y gpiod libgpiod-dev git cmake
 git clone https://github.com/SivonZn/neoembux.git
 cd neoembux
-mkdir build && cd build
-cmake .. && make 
+mkdir build
+cmake -B build -DBOARD=<your_board>
+# 例如 cmake -B build -DBOARD=FORLINX_ELF_2
+make
 sudo make install
 sudo ldconfig
 ```

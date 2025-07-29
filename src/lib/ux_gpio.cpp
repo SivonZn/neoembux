@@ -5,7 +5,7 @@
 static char embux_exe_name[PATH_MAX] = "NeoEmbUX";
 struct gpiod_request_config *embux_reqcfg = NULL;
 
-static int initialized = 0;
+static int embux_initialized = 0;
 
 struct io_raw io_raw[EMBUX_GPIO_NUM];
 struct io io[EMBUX_GPIO_NUM];
@@ -23,12 +23,12 @@ static int ioSetup_impl() {
     } else {
         perror("NeoEmbUX Can't Get Exe Location! It May Cause Some Bugs...");
     }
-    if(embux_reqcfg == NULL) {
+    if(embux_reqcfg != NULL) {
         gpiod_request_config_set_consumer(embux_reqcfg, embux_exe_name);
     }
     // Init Pin map
     initPinMap();
-    initialized = 1;
+    embux_initialized = 1;
     return EMBUX_EXIT_SUCCESS;
 }
 
@@ -37,7 +37,7 @@ static int readPin_impl(int pin) {
     int acc_pin = pin - 1;
 
     // Check if IO is inited
-    if(!initialized) {
+    if(!embux_initialized) {
         fprintf(stderr, "[%s] Using ioSetup First!\n", embux_exe_name);
         return EMBUX_EXIT_FAILURE;
     }
@@ -60,7 +60,7 @@ static int setPin_impl(int acc_pin, int mode, ...) {
     int result = EMBUX_EXIT_SUCCESS;
 
     // Check if IO is inited
-    if(!initialized) {
+    if(!embux_initialized) {
         fprintf(stderr, "[%s] Using ioSetup First!\n", embux_exe_name);
         result = EMBUX_EXIT_FAILURE;
     }
@@ -118,7 +118,7 @@ static int setPin_impl(int acc_pin, int mode, ...) {
     if (!io[acc_pin].request) {
 		fprintf(stderr, "failed to request line: %s\n",
 			strerror(errno));
-		return EXIT_FAILURE;
+        return EMBUX_EXIT_FAILURE;
 	}
 
     return EMBUX_EXIT_SUCCESS;
@@ -133,7 +133,7 @@ int setPinSoftIRQ_impl(int pin, int edge, void* fun) {
     int acc_pin = pin - 1;
 
     // Check if IO is inited
-    if(!initialized) {
+    if(!embux_initialized) {
         fprintf(stderr, "[%s] Using ioSetup First!\n", embux_exe_name);
         return EMBUX_EXIT_FAILURE;
     }
@@ -178,6 +178,10 @@ int setPinSoftIRQ_impl(int pin, int edge, void* fun) {
 
     // Payload init
     IRQThreadPayload* payload = static_cast<IRQThreadPayload*>(malloc(sizeof(IRQThreadPayload)));
+    if (!payload) {
+        perror("Failed to allocate memory for IRQThreadPayload");
+        return EMBUX_EXIT_FAILURE;
+    }
     payload->func = (IRQExecFunc)fun;
     payload->request = io[acc_pin].request;
 
@@ -205,7 +209,7 @@ static void releasePin_impl(int acc_pin) {
 }
 
 static void ioRelease_impl() {
-    if(!initialized) {
+    if(!embux_initialized) {
         fprintf(stderr, "[%s] Using ioSetup First!\n", embux_exe_name);
         return;
     }
@@ -225,7 +229,8 @@ static void ioRelease_impl() {
         }
     }
     gpiod_request_config_free(embux_reqcfg);
-    initialized = 0;
+    embux_reqcfg = NULL;
+    embux_initialized = 0;
     return;
 }
 
@@ -269,6 +274,7 @@ static int initPin(int acc_pin) {
 }
 
 static int initPinMap(){
+    #ifdef EMBUX_ROCKCHIP
     for(int i = 0; i < EMBUX_GPIO_NUM; i++) {
         if(gpio[i] == EMBUX_GND || gpio[i] == EMBUX_VCC_5V || gpio[i] == EMBUX_VCC_3V3 || gpio[i] == EMBUX_UNKNOWN) {
             continue;
@@ -279,8 +285,9 @@ static int initPinMap(){
             io_raw[i].isGPIO = true;
         }
     }
+    #endif
     return EMBUX_EXIT_SUCCESS;
-};
+}
 
 #ifdef __cplusplus
 int neoEmbUx::ioSetup() {
@@ -292,22 +299,31 @@ int neoEmbUx::readPin(int pin) {
 int neoEmbUx::setPin(int pin, int mode, ...) {
     // Transform Pin 1~40 to 0~39
     int acc_pin = pin - 1;
+
     va_list args;
     va_start(args, mode);
     if(mode == neoEmbUx::IN) {
-        return setPin_impl(acc_pin, mode);
-    } else if(mode == neoEmbUx::OUT){
+        int ret = setPin_impl(acc_pin, mode);
+        va_end(args);
+        return ret;
+    }
+    else if(mode == neoEmbUx::IN) {
         int pinValue = va_arg(args, int);
         if(pinValue != neoEmbUx::HIGH && pinValue != neoEmbUx::LOW) {
             perror("Error Args: pinValue!");
+            va_end(args);
             return EMBUX_EXIT_FAILURE;
         }
-        return setPin_impl(acc_pin, mode, pinValue);
+        int ret = setPin_impl(acc_pin, mode, pinValue);
+        va_end(args);
+        return ret;
     } else {
         perror("Error Args: pinMode!");
+        va_end(args);
         return EMBUX_EXIT_FAILURE;
     }
-    va_end(args); 
+    va_end(args);
+    return EMBUX_EXIT_SUCCESS;
 }
 bool neoEmbUx::checkPin(int pin) {
     // Transform Pin 1~40 to 0~39
@@ -332,19 +348,27 @@ int neoEmbUx_setPin(int pin, int mode, ...) {
     va_list args;
     va_start(args, mode);
     if(mode == NEOEMBUX_IN) {
-        return setPin_impl(acc_pin, mode);
-    } else if(mode == NEOEMBUX_OUT){
+        int ret = setPin_impl(acc_pin, mode);
+        va_end(args);
+        return ret;
+    } else 
+    if(mode == NEOEMBUX_OUT) {
         int pinValue = va_arg(args, int);
         if(pinValue != NEOEMBUX_HIGH && pinValue != NEOEMBUX_LOW) {
             perror("Error Args: pinValue!");
+            va_end(args);
             return EMBUX_EXIT_FAILURE;
         }
-        return setPin_impl(acc_pin, mode, pinValue);
+        int ret = setPin_impl(acc_pin, mode, pinValue);
+        va_end(args);
+        return ret; 
     } else {
         perror("Error Args: pinMode!");
+        va_end(args);
         return EMBUX_EXIT_FAILURE;
     }
-    va_end(args); 
+
+    va_end(args);
     return EMBUX_EXIT_SUCCESS;
 }
 bool neoEmbUx_checkPin(int pin) {

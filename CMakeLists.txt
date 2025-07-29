@@ -1,15 +1,24 @@
 cmake_minimum_required(VERSION 3.10)
 project(neoembux)
 
-# 设置C++标准
+set(BOARD "None" CACHE STRING "Select board type")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 查找gpiod库
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GPIOD REQUIRED libgpiod)
 
-# 添加动态库目标 (关键修改)
+if(${BOARD} STREQUAL "FORLINX_ELF_2")
+    message("Selected board: Forlinx ELF 2")
+    add_definitions(-DEMBUX_BOARD_FORLINX_ELF_2)
+elseif(${BOARD} STREQUAL "ORANGEPI_5_PLUS")
+    message("Selected board: Orange Pi 5 Plus")
+    add_definitions(-DEMBUX_BOARD_ORANGEPI_5_PLUS)
+else()
+    message(FATAL_ERROR "No board has been found in list! BOARD=${BOARD}")
+endif()
+
 add_library(neoembux SHARED 
     src/lib/ux_gpio.cpp
     src/lib/ux_softirq.cpp
@@ -17,9 +26,8 @@ add_library(neoembux SHARED
 
 add_executable(embux src/app/embux.cpp)
 
-# 链接库和头文件
 target_link_libraries(embux PRIVATE
-    neoembux       # 链接您的动态库
+    neoembux
     ${GPIOD_LIBRARIES}
 )
 
@@ -28,33 +36,28 @@ target_include_directories(embux PRIVATE
     ${GPIOD_INCLUDE_DIRS}
 )
 
-# 设置库的版本号 (可选)
 set_target_properties(neoembux PROPERTIES VERSION 1.0.0 SOVERSION 1)
 
-# 包含目录
 target_include_directories(neoembux PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
     ${GPIOD_INCLUDE_DIRS}
 )
 
-# 链接库
 target_link_libraries(neoembux PRIVATE ${GPIOD_LIBRARIES})
 
-# 安装配置 (关键添加)
 install(TARGETS neoembux
-    LIBRARY DESTINATION lib          # 安装到系统库目录
-    ARCHIVE DESTINATION lib          # 静态库位置
-    PUBLIC_HEADER DESTINATION include # 头文件安装位置
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    PUBLIC_HEADER DESTINATION include
 )
 
 install(TARGETS embux
-    RUNTIME DESTINATION bin  # 关键：安装到系统bin目录
+    RUNTIME DESTINATION bin
 )
 
-# 安装头文件 (假设公共头文件在include目录)
 install(DIRECTORY include/ DESTINATION include)
 
-# 保留测试程序（可选）
+# 测试程序
 # add_executable(neoembux_test test/test.cpp)
 # target_link_libraries(neoembux_test PRIVATE neoembux)
