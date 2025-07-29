@@ -10,7 +10,7 @@
 typedef void (*IRQExecFunc)(void*);
 
 typedef struct {
-    gpiod_line *line;
+    gpiod_line_request *request;
     IRQExecFunc func;  // 目标函数指针
     void* arg;           // 目标函数的参数
 } IRQThreadPayload;

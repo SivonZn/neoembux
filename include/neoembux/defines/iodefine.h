@@ -6,14 +6,14 @@
 #include "./iodefine_elf2.h"
 #endif
 
-static const int gpio[EMBUX_GPIO_NUM] = {
+static const unsigned int gpio[EMBUX_GPIO_NUM] = {
     #define IO(pin, value)  value,
     EMBUX_GPIO_MAPPING
     #undef IO
 };
 
 #ifdef EMBUX_HAS_EXTERNED_PIN
-static const int external_gpio[EMBUX_GPIO_NUM] = {
+static const unsigned int external_gpio[EMBUX_GPIO_NUM] = {
     #define IO(pin, value)  value,
     EXTERN_GPIO_MAPPING
     #undef IO

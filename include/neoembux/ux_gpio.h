@@ -15,7 +15,9 @@
 
 struct io {
     gpiod_chip *chip;
-    gpiod_line *line;
+    struct gpiod_line_request *request = NULL;
+	struct gpiod_line_settings *settings;
+	struct gpiod_line_config *line_cfg;
     bool isInited = false;
     int direction = -1;
 
@@ -24,8 +26,8 @@ struct io {
 };
 
 struct io_raw {
-    int chip;
-    int line;
+    unsigned int chip;
+    unsigned int line;
     bool isGPIO = false;
 };
 
@@ -43,7 +45,7 @@ int neoEmbUx_ioSetup(void); // C语言版本
 int neoEmbUx_readPin(int pin);
 int neoEmbUx_setPin(int pin, int mode, ...);
 bool neoEmbUx_checkPin(int pin);
-int setPinSoftIRQ_impl(int pin, void* fun);
+int setPinSoftIRQ_impl(int pin, int edge, void* fun);
 void neoEmbUx_ioRelease(void);
 #ifdef __cplusplus
 }                           // 结束 extern "C" 块

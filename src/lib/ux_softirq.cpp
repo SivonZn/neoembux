@@ -1,39 +1,51 @@
+#include <errno.h>
+#include <string.h>
 #include "../../include/neoembux/ux_softirq.h"
 
+static const char *edge_event_type_str(struct gpiod_edge_event *event) {
+	switch (gpiod_edge_event_get_event_type(event)) {
+	case GPIOD_EDGE_EVENT_RISING_EDGE:
+		return "Rising";
+	case GPIOD_EDGE_EVENT_FALLING_EDGE:
+		return "Falling";
+	default:
+		return "Unknown";
+	}
+}
+
 void* irq_monitor_thread(void* arg) {
-    struct gpiod_line_bulk gpiod_line_bulk, event_bulk;
-    struct gpiod_line_event event;
-    int ret;
+    struct gpiod_edge_event *event;
+    struct gpiod_edge_event_buffer *event_buffer;
+    
+    int i, ret, event_buf_size;
+    event_buf_size = 1;
+	event_buffer = gpiod_edge_event_buffer_new(event_buf_size);
+	if (!event_buffer) {
+		fprintf(stderr, "failed to create event buffer: %s\n", strerror(errno));
+        return NULL;
+	}
 
     IRQThreadPayload* payload = (IRQThreadPayload*)arg;
-    struct gpiod_line* line = payload->line;
+    struct gpiod_line_request *request = payload->request;
 
-    gpiod_line_bulk_init(&gpiod_line_bulk);
-    gpiod_line_bulk_add(&gpiod_line_bulk, line);
-    
     // printf("IRQ monitor thread started. TID: %ld\n", pthread_self());
 
     while(1) {
-        // 等待中断发生（阻塞）
-        ret = gpiod_line_event_wait_bulk(&gpiod_line_bulk, NULL, &event_bulk);
-        if (ret < 0) {
-            printf("gpiod line event wait error\n");
+        /* Blocks until at least one event is available. */
+        ret = gpiod_line_request_read_edge_events(request, event_buffer,
+                                event_buf_size);
+        if (ret == -1) {
+            fprintf(stderr, "error reading edge events: %s\n", strerror(errno));
+            return NULL;
         }
-        else if(ret == 0) {
-            printf("gpiod line event wait timeout\n");
+        for (i = 0; i < ret; i++) {
+            event = gpiod_edge_event_buffer_get_event(event_buffer, i);
+            printf("offset: %d  type: %-7s  event #%ld\n",
+                    gpiod_edge_event_get_line_offset(event),
+                    edge_event_type_str(event),
+                    gpiod_edge_event_get_line_seqno(event));
         }
-        else {
-            /* 解析检测到的事件 */
-            for(int i = 0; i < event_bulk.num_lines; i++) {
-                if(gpiod_line_event_read(event_bulk.lines[i], &event) == 0) {
-                    printf("line %d event happen\n", gpiod_line_offset(event_bulk.lines[i]));
-                    payload->func(payload->arg);
-                    break;
-                    /* 还可以根据event中的内容判断当前检测到的事件是上升沿还是下降沿*/
-                }                  
-            }
-            usleep(50000);
-        }
+        usleep(50000);
     }
     return NULL;
 }
