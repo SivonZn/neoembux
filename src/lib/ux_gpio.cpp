@@ -33,7 +33,7 @@ static int readPin_impl(int pin) {
             return EMBUX_EXIT_FAILURE;
         }
     }
-    if(!initialized) {
+    if(!embux_initialized) {
         fprintf(stderr, "[%s] Using ioSetup First!\n", neoembux_exe_name);
         return EMBUX_EXIT_FAILURE;
     }
@@ -51,7 +51,7 @@ static int setPin_impl(int pin, int mode, ...) {
             result = EMBUX_EXIT_FAILURE;
         }
     }
-    if(!initialized) {
+    if(!embux_initialized) {
         fprintf(stderr, "[%s] Using ioSetup First!\n", neoembux_exe_name);
         result = EMBUX_EXIT_FAILURE;
     }
@@ -176,6 +176,7 @@ static int initPin(int acc_pin) {
 }
 
 static int initPinMap(){
+    #ifdef EMBUX_ROCKCHIP
     for(int i = 0; i < EMBUX_GPIO_NUM; i++) {
         if(gpio[i] == EMBUX_GND || gpio[i] == EMBUX_VCC_5V || gpio[i] == EMBUX_VCC_3V3 || gpio[i] == EMBUX_UNKNOWN) {
             continue;
@@ -185,8 +186,9 @@ static int initPinMap(){
             io_raw[i].isGPIO = true;
         }
     }
+    #endif
     return EMBUX_EXIT_SUCCESS;
-};
+}
 
 // C++命名空间版本实现
 #ifdef __cplusplus
@@ -205,14 +207,17 @@ int neoEmbUx::setPin(int pin, int mode, ...) {
         int pinValue = va_arg(args, int);
         if(pinValue != neoEmbUx::HIGH && pinValue != neoEmbUx::LOW) {
             perror("Error Args: pinValue!");
+            va_end(args);
             return EMBUX_EXIT_FAILURE;
         }
         return setPin_impl(pin, mode, pinValue);
     } else {
         perror("Error Args: pinMode!");
+        va_end(args);
         return EMBUX_EXIT_FAILURE;
     }
-    va_end(args); 
+    va_end(args);
+    return EMBUX_EXIT_SUCCESS;
 }
 bool neoEmbUx::checkPin(int pin) {
     return checkPin_impl(pin);
@@ -238,14 +243,17 @@ int neoEmbUx_setPin(int pin, int mode, ...) {
         int pinValue = va_arg(args, int);
         if(pinValue != NEOEMBUX_HIGH && pinValue != NEOEMBUX_LOW) {
             perror("Error Args: pinValue!");
+            va_end(args);
             return EMBUX_EXIT_FAILURE;
         }
         return setPin_impl(pin, mode, pinValue);
     } else {
         perror("Error Args: pinMode!");
+        va_end(args);
         return EMBUX_EXIT_FAILURE;
     }
-    va_end(args); 
+
+    va_end(args);
     return EMBUX_EXIT_SUCCESS;
 }
 bool neoEmbUx_checkPin(int pin) {
